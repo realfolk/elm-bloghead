@@ -1,4 +1,9 @@
-module Bloghead.Data.Color exposing (Channels, Color, black, blue, getChannels, green, pct50, red, rgba)
+module Bloghead.Data.Color exposing (Channels, Color, black, blue, green, pct50, red, rgba, toChannels, toCssColor, toHtml)
+
+import Html exposing (Html)
+import Html.Attributes as Attributes
+
+
 
 -- Color
 
@@ -47,24 +52,11 @@ blue =
 
 
 
----- Modifiers
+---- Converters
 
 
-pct50 : Color -> Color
-pct50 color =
-    let
-        channels =
-            getChannels color
-    in
-    rgba channels.red channels.green channels.blue channels.alpha
-
-
-
----- Accessors
-
-
-getChannels : Color -> Channels
-getChannels color =
+toChannels : Color -> Channels
+toChannels color =
     case color of
         RGBA channels ->
             channels
@@ -74,6 +66,54 @@ getChannels color =
 
         Blue ->
             makeBoundedChannels 0 0 255 1
+
+
+toHtml : Color -> Html msg
+toHtml color =
+    let
+        cssColor =
+            toCssColor color
+    in
+    Html.div
+        [ Attributes.style "background-color" cssColor
+        , Attributes.style "border-radius" "4px"
+        , Attributes.style "padding" "8px 16px"
+        , Attributes.style "font-family" "sans-serif"
+        , Attributes.style "font-weight" "700"
+        ]
+        [ Html.text cssColor ]
+
+
+toCssColor : Color -> String
+toCssColor color =
+    let
+        channels =
+            toChannels color
+    in
+    String.concat
+        [ "rgba("
+        , String.fromInt channels.red
+        , ","
+        , String.fromInt channels.green
+        , ","
+        , String.fromInt channels.blue
+        , ","
+        , String.fromFloat channels.alpha
+        , ")"
+        ]
+
+
+
+---- Modifiers
+
+
+pct50 : Color -> Color
+pct50 color =
+    let
+        channels =
+            toChannels color
+    in
+    rgba channels.red channels.green channels.blue channels.alpha
 
 
 
