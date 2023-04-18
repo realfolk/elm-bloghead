@@ -1,4 +1,4 @@
-module Bloghead.Data.Color exposing (Channels, Color, black, blue, green, pct50, red, rgba, toChannels, toCssColor, toHtml)
+module Bloghead.Data.Color exposing (Channels, Color, Error(..), alpha50, black, blue, green, opaque, red, rgba, safeRGBA, setAlpha, toChannels, toCssColor, toHtml, transparent)
 
 import Html exposing (Html)
 import Html.Attributes as Attributes
@@ -28,7 +28,19 @@ type alias Channels =
 
 rgba : Int -> Int -> Int -> Float -> Color
 rgba r g b a =
-    RGBA (makeBoundedChannels r g b a)
+    RGBA <| makeBoundedChannels r g b a
+
+
+type Error
+    = InvalidRedChannel Int
+    | InvalidGreenChannel Int
+    | InvalidBlueChannel Int
+    | InvalidAlphaChannel Float
+
+
+safeRGBA : Int -> Int -> Int -> Float -> Result Error Color
+safeRGBA r g b a =
+    Result.map RGBA <| safeMakeChannels r g b a
 
 
 black : Color
@@ -107,44 +119,68 @@ toCssColor color =
 ---- Modifiers
 
 
-pct50 : Color -> Color
-pct50 color =
+setAlpha : Float -> Color -> Color
+setAlpha alpha color =
     let
         channels =
             toChannels color
     in
-    rgba channels.red channels.green channels.blue channels.alpha
+    rgba channels.red channels.green channels.blue alpha
+
+
+transparent : Color -> Color
+transparent color =
+    setAlpha 0 color
+
+
+opaque : Color -> Color
+opaque color =
+    setAlpha 1 color
+
+
+alpha50 : Color -> Color
+alpha50 color =
+    setAlpha 0.5 color
 
 
 
 ---- Internal
 
 
+safeMakeChannels : Int -> Int -> Int -> Float -> Result Error Channels
+safeMakeChannels r g b a =
+    let
+        validateColorChannel : (Int -> Error) -> Int -> Result Error Int
+        validateColorChannel makeError n =
+            if n < 0 || n > 255 then
+                Err (makeError n)
+
+            else
+                Ok n
+
+        validateAlphaChannel : (Float -> Error) -> Float -> Result Error Float
+        validateAlphaChannel makeError n =
+            if n < 0 || n > 1 then
+                Err (makeError n)
+
+            else
+                Ok n
+    in
+    Result.map4
+        Channels
+        (validateColorChannel InvalidRedChannel r)
+        (validateColorChannel InvalidGreenChannel g)
+        (validateColorChannel InvalidBlueChannel b)
+        (validateAlphaChannel InvalidAlphaChannel a)
+
+
 makeBoundedChannels : Int -> Int -> Int -> Float -> Channels
 makeBoundedChannels r g b a =
     let
-        coerceChannel n =
-            if n < 0 then
-                0
+        clampColorChannel =
+            clamp 0 255
 
-            else if n > 255 then
-                255
-
-            else
-                n
-
-        coerceOpacity o =
-            if o < 0 then
-                0
-
-            else if o > 1 then
-                1
-
-            else
-                o
+        clampAlphaChannel =
+            clamp 0 1
     in
-    { red = coerceChannel r
-    , green = coerceChannel g
-    , blue = coerceChannel b
-    , alpha = coerceOpacity a
-    }
+    Channels (clampColorChannel r) (clampColorChannel g) (clampColorChannel b) (clampAlphaChannel a)
