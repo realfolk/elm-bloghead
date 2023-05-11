@@ -1,4 +1,4 @@
-module Bloghead.Data.Color exposing (Channels, Color, Error(..), alpha50, black, blue, green, opaque, red, rgba, safeRGBA, setAlpha, toChannels, toCssColor, toHtml, transparent)
+module Example.Color exposing (Channels, Color, Error(..), alpha50, black, blue, green, opaque, red, rgba, safeRGBA, setAlpha, toChannels, toCssColor, toHtml, transparent)
 
 import Html exposing (Html)
 import Html.Attributes as Attributes

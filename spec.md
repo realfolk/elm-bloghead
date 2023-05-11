@@ -1,0 +1,12 @@
+- Single blog
+- Two user personas:
+  - All
+    - View posts
+  - Admin
+    - Create posts
+    - Edit posts
+    - Delete posts
+  - Viewer
+- Use a Cmd interface to store and retrieve data
+  - v1 will use our Model
+  - v2 will use LocalStorage
