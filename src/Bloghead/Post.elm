@@ -10,7 +10,9 @@ module Bloghead.Post exposing
     )
 
 import Html exposing (Html)
+import Html.Attributes as Attr
 import Html.Events as Events
+import Markdown
 import Time
 
 
@@ -65,10 +67,29 @@ getBody (Post { body }) =
 -- VIEWS
 
 
-viewPostListItem : (Post -> msg) -> Post -> Html msg
-viewPostListItem setActivePost post =
+viewPostListItem : Bool -> (Post -> msg) -> Post -> Html msg
+viewPostListItem isActivePost setActivePost post =
+    let
+        styleAttrs =
+            List.concat
+                [ [ Attr.style "padding-bottom" "4px"
+                  , Attr.style "border-bottom-size" "2px"
+                  , Attr.style "border-bottom-style" "solid"
+                  ]
+                , if isActivePost then
+                    [ Attr.style "border-color" "tomato"
+                    , Attr.style "color" "tomato"
+                    ]
+
+                  else
+                    [ Attr.style "border-color" "transparent"
+                    , Attr.style "cursor" "pointer"
+                    , Attr.style "color" "blue"
+                    ]
+                ]
+    in
     Html.a
-        [ Events.onClick (setActivePost post) ]
+        (Events.onClick (setActivePost post) :: styleAttrs)
         [ Html.text (getTitle post ++ " by " ++ getAuthor post) ]
 
 
@@ -78,7 +99,7 @@ viewFullPost post =
         [ Html.h3 [] [ Html.text <| getTitle post ]
         , Html.em [] [ Html.text <| getAuthor post ]
         , Html.div [] [ Html.text <| timeToString <| getPublishTime post ]
-        , Html.div [] [ Html.text <| getBody post ]
+        , Html.div [] [ Markdown.toHtml [] <| getBody post ]
         ]
 
 

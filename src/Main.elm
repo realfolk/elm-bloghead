@@ -4,9 +4,14 @@ import Bloghead.Api as Api
 import Bloghead.Post as Post exposing (Post)
 import Browser
 import Html exposing (Html)
+import Html.Attributes as Attr
 
 
-main : Program () Model Msg
+type alias Flags =
+    String
+
+
+main : Program Flags Model Msg
 main =
     Browser.element
         { init = init
@@ -27,8 +32,8 @@ type Msg
     | SetActivePost Post
 
 
-init : flags -> ( Model, Cmd Msg )
-init _ =
+init : Flags -> ( Model, Cmd Msg )
+init rawDbString =
     ( { posts = []
       , activePost = Nothing
       }
@@ -48,10 +53,30 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Html.div []
-        [ Html.div []
-            (List.map (Post.viewPostListItem SetActivePost) model.posts)
+    Html.div
+        [ Attr.style "padding" "48px 32px"
+        ]
+        [ Html.div
+            [ Attr.style "display" "flex"
+            , Attr.style "flex-flow" "column nowrap"
+            , Attr.style "align-items" "flex-start"
+            , Attr.style "padding" "32px"
+            , Attr.style "border" "1px solid silver"
+            , Attr.style "border-radius" "8px"
+            ]
+            (model.posts
+                |> List.map
+                    (\post -> Post.viewPostListItem (Just post == model.activePost) SetActivePost post)
+                |> List.intersperse (Html.div [ Attr.style "height" "18px" ] [])
+            )
         , model.activePost
             |> Maybe.map Post.viewFullPost
             |> Maybe.withDefault (Html.text "No post selected.")
+            |> List.singleton
+            |> Html.div
+                [ Attr.style "margin-top" "48px"
+                , Attr.style "padding" "32px"
+                , Attr.style "border" "1px solid silver"
+                , Attr.style "border-radius" "8px"
+                ]
         ]
