@@ -1,5 +1,7 @@
 module Bloghead.Post exposing
     ( Post
+    , decoder
+    , encode
     , getAuthor
     , getBody
     , getPublishTime
@@ -12,6 +14,8 @@ module Bloghead.Post exposing
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Events
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 import Markdown
 import Time
 
@@ -37,6 +41,34 @@ new title author publishTime body =
         , publishTime = publishTime
         , body = body
         }
+
+
+decoder : Decoder Post
+decoder =
+    let
+        posixDecoder =
+            Decode.map Time.millisToPosix Decode.int
+    in
+    Decode.map4
+        new
+        Decode.string
+        Decode.string
+        posixDecoder
+        Decode.string
+
+
+
+-- CONVERTERS
+
+
+encode : Post -> Value
+encode (Post post) =
+    Encode.object
+        [ ( "title", Encode.string post.title )
+        , ( "author", Encode.string post.author )
+        , ( "publishTime", Encode.int <| Time.posixToMillis post.publishTime )
+        , ( "body", Encode.string post.body )
+        ]
 
 
 

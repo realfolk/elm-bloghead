@@ -1,14 +1,15 @@
 module Main exposing (main)
 
-import Bloghead.Api as Api
+import Bloghead.Database as Db
 import Bloghead.Post as Post exposing (Post)
 import Browser
 import Html exposing (Html)
 import Html.Attributes as Attr
+import Json.Encode as Json
 
 
 type alias Flags =
-    String
+    Json.Value
 
 
 main : Program Flags Model Msg
@@ -28,27 +29,35 @@ type alias Model =
 
 
 type Msg
-    = GotPosts (List Post)
-    | SetActivePost Post
+    = SetActivePost Post
+    | PersistData
 
 
 init : Flags -> ( Model, Cmd Msg )
-init rawDbString =
-    ( { posts = []
+init json =
+    let
+        posts =
+            Db.decode json
+                |> Maybe.map Db.getPosts
+                |> Maybe.withDefault []
+    in
+    ( { posts = posts
       , activePost = Nothing
       }
-    , Cmd.map GotPosts Api.getPosts
+    , Cmd.none
     )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotPosts posts ->
-            ( { model | posts = posts }, Cmd.none )
-
         SetActivePost post ->
             ( { model | activePost = Just post }, Cmd.none )
+
+        PersistData ->
+            ( model
+            , Db.persist (Db.fromPosts model.posts)
+            )
 
 
 view : Model -> Html Msg

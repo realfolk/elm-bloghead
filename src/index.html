@@ -15,7 +15,7 @@
         flags: JSON.parse(window.localStorage.getItem(DB_KEY) || "[]")
       });
 
-      app.ports.persist.subscribe(function(dbData) {
+      app.ports.persistJson.subscribe(function(dbData) {
         window.localStorage.setItem(DB_KEY, JSON.stringify(dbData));
       });
     </script>
