@@ -7,6 +7,7 @@ module Bloghead.Post exposing
     , getPublishTime
     , getTitle
     , new
+    , newWithCurrentPublishTime
     , viewFullPost
     , viewPostListItem
     )
@@ -17,6 +18,7 @@ import Html.Events as Events
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Markdown
+import Task
 import Time
 
 
@@ -43,6 +45,11 @@ new title author publishTime body =
         }
 
 
+newWithCurrentPublishTime : String -> String -> String -> Cmd Post
+newWithCurrentPublishTime title author body =
+    Task.perform (\publishTime -> new title author publishTime body) Time.now
+
+
 decoder : Decoder Post
 decoder =
     let
@@ -51,10 +58,10 @@ decoder =
     in
     Decode.map4
         new
-        Decode.string
-        Decode.string
-        posixDecoder
-        Decode.string
+        (Decode.field "title" Decode.string)
+        (Decode.field "author" Decode.string)
+        (Decode.field "publishTime" posixDecoder)
+        (Decode.field "body" Decode.string)
 
 
 
