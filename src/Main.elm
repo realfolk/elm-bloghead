@@ -2,11 +2,14 @@ module Main exposing (main)
 
 import Bloghead.Database as Db
 import Bloghead.Post as Post exposing (Post)
+import Bloghead.Route as Route exposing (Route)
 import Browser
+import Browser.Navigation as Browser
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Html.Events as Events
 import Json.Encode as Json
+import Url exposing (Url)
 
 
 type alias Flags =
@@ -15,11 +18,13 @@ type alias Flags =
 
 main : Program Flags Model Msg
 main =
-    Browser.element
+    Browser.application
         { init = init
         , update = update
         , view = view
         , subscriptions = \_ -> Sub.none
+        , onUrlRequest = OnUrlRequest
+        , onUrlChange = OnUrlChange
         }
 
 
@@ -27,6 +32,8 @@ type alias Model =
     { posts : List Post
     , activePost : Maybe Post
     , form : Form
+    , route : Route
+    , key : Browser.Key
     }
 
 
@@ -43,7 +50,9 @@ emptyForm =
 
 
 type Msg
-    = SetActivePost Post
+    = OnUrlRequest Browser.UrlRequest
+    | OnUrlChange Url
+    | SetActivePost Post
     | OnSubmitForm
     | OnCreatePost Post
     | OnTitleInput String
@@ -51,8 +60,8 @@ type Msg
     | OnBodyInput String
 
 
-init : Flags -> ( Model, Cmd Msg )
-init json =
+init : Flags -> Url -> Browser.Key -> ( Model, Cmd Msg )
+init json url key =
     let
         posts =
             Db.decode json
@@ -62,6 +71,8 @@ init json =
     ( { posts = posts
       , activePost = Nothing
       , form = emptyForm
+      , route = Route.fromUrl url
+      , key = key
       }
     , Cmd.none
     )
@@ -70,6 +81,19 @@ init json =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        OnUrlRequest request ->
+            ( model
+            , case request of
+                Browser.Internal url ->
+                    Browser.pushUrl model.key (Url.toString url)
+
+                Browser.External url ->
+                    Browser.load url
+            )
+
+        OnUrlChange url ->
+            ( { model | route = Route.fromUrl url }, Cmd.none )
+
         SetActivePost post ->
             ( { model | activePost = Just post }, Cmd.none )
 
@@ -122,15 +146,26 @@ update msg model =
             ( { model | form = newForm }, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
-    Html.div
-        [ Attr.style "padding" "48px 32px"
-        ]
-        [ viewCreatePostForm model.form
-        , viewPostList model
-        , viewActivePost model.activePost
-        ]
+    case model.route of
+        Route.Posts ->
+            { title = "Bloghead"
+            , body =
+                [ Html.div
+                    [ Attr.style "padding" "48px 32px"
+                    ]
+                    [ viewCreatePostForm model.form
+                    , viewPostList model
+                    , viewActivePost model.activePost
+                    ]
+                ]
+            }
+
+        _ ->
+            { title = "Not Found"
+            , body = [ Html.text "Not Found" ]
+            }
 
 
 viewCreatePostForm : Form -> Html Msg
